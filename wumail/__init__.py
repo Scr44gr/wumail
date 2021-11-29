@@ -53,7 +53,7 @@ class EmailExtractor:
             response : Response = queue.get().result()
             if response.status_code == 200:
                 extracted_emails: List[str] = self.get_emails(response.text)
-                [self.emails.put(email) for email in extracted_emails]
+                [self.emails.put(email) for email in extracted_emails if email not in self.emails.queue]
         return list(self.emails.queue)
 
     def get_emails(self, text: str):
