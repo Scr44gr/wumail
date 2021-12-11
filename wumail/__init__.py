@@ -5,7 +5,7 @@ from requests_futures.sessions import FuturesSession
 from requests import Response
 from re import compile, Pattern
 from .utils import clean_urls
-
+from requests.exceptions import ConnectionError
 
 
 class EmailExtractor:
@@ -27,7 +27,7 @@ class EmailExtractor:
         if kwargs.get('remove_duplicates_urls'):
             filename: str = kwargs.get('cache_filename', './cache.pkl')
             self.urls: List[str] = clean_urls(self.urls, filename)
-        
+
         if kwargs.get('custom_email_pattern'):
             self.RE_EMAIL_PATTERN: Pattern = compile(kwargs.get('custom_email_pattern'))
 
@@ -50,10 +50,13 @@ class EmailExtractor:
     def _extract_emails_from_queue(self, queue: Queue):
         
         while not queue.empty():
-            response : Response = queue.get().result()
-            if response.status_code == 200:
-                extracted_emails: List[str] = self.get_emails(response.text)
-                [self.emails.put(email) for email in extracted_emails if email not in self.emails.queue]
+            try:
+                response : Response = queue.get().result()
+                if response.status_code == 200:
+                    extracted_emails: List[str] = self.get_emails(response.text)
+                    [self.emails.put(email) for email in extracted_emails if email not in self.emails.queue]
+            except ConnectionError:
+                continue
         return list(self.emails.queue)
 
     def get_emails(self, text: str):
