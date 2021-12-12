@@ -55,7 +55,7 @@ class EmailExtractor:
                 if response.status_code == 200:
                     extracted_emails: List[str] = self.get_emails(response.text)
                     [self.emails.put(email) for email in extracted_emails if email not in self.emails.queue]
-            except ConnectionError:
+            except (ConnectionError, RecursionError):
                 continue
         return list(self.emails.queue)
 
