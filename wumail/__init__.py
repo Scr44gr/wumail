@@ -6,7 +6,7 @@ from requests import Response
 from re import compile, Pattern
 from .utils import clean_urls
 from requests.exceptions import ConnectionError
-
+from logging import getLogger
 
 class EmailExtractor:
     """
@@ -19,6 +19,7 @@ class EmailExtractor:
         self.urls: List[str] = urls
         self.emails : Queue = Queue()
         self.set_up_environment(**kwargs)
+        self.logger = getLogger(__name__)
 
     def set_up_environment(self, **kwargs):
         """
@@ -56,6 +57,9 @@ class EmailExtractor:
                     extracted_emails: List[str] = self.get_emails(response.text)
                     [self.emails.put(email) for email in extracted_emails if email not in self.emails.queue]
             except (ConnectionError, RecursionError):
+                continue
+            except:
+                self.logger.error(f'Error while extracting emails from {response.url}')
                 continue
         return list(self.emails.queue)
 
